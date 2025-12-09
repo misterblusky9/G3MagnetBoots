@@ -19,7 +19,7 @@ namespace G3MagnetBoots
         // log whjen target is valid
         public bool IsValid()
         {
-            var (valid = part != null && collider != null) && (!this.part.vessel.vesselType.Equals(VesselType.SpaceObject) || !this.part.vessel.vesselType.Equals(VesselType.Unknown));
+            var valid = part != null && collider != null && (!this.part.vessel.vesselType.Equals(VesselType.SpaceObject) || !this.part.vessel.vesselType.Equals(VesselType.Unknown));
             //Logger.Trace(valid ? $"Acquired hull target: Part={part.name}, Collider={collider.name}, HitPoint={hitPoint}, HitNormal={hitNormal}, HitDistance={hitDistance}" : "Hull target is invalid.");
             return valid;
         }
