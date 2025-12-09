@@ -390,8 +390,7 @@ namespace G3MagnetBoots
                 KerbalEVAAccess.EvaChute(Kerbal).AllowRepack(allowRepack: Settings.allowPackChute);
             }
 
-            if (!Settings.canJetpackOnHull)
-                SetToggleJetpack(false);
+            SetToggleJetpack(false);
 
             _animation.CrossFade(Kerbal.Animations.idle, 1.2f, PlayMode.StopSameLayer);
             if (_hullTarget.part != null)
@@ -515,10 +514,9 @@ namespace G3MagnetBoots
 
         private IEnumerator AutoDeployJetpack_Coroutine(float delay = 1.0f)
         {
-
+            yield return new WaitForSeconds(delay);
             if (Kerbal.HasJetpack && !Kerbal.JetpackDeployed)
             {
-                yield return new WaitForSeconds(delay);
                 SetToggleJetpack(true);
             }
         }
@@ -537,8 +535,6 @@ namespace G3MagnetBoots
                 }
             }
         }
-
-
 
         protected virtual void weld_OnEnter(KFSMState st)
         {
