@@ -13,13 +13,17 @@ using static G3MagnetBoots.HullTargeting;
 using static KerbalEVA;
 
 // Up next:  
-// *Kerbals surface - aligned forward direction(the way they face) doesn't turn alongside the plane they are attached to, resulting in clear misaligned facing direction when the vessel beneath rotates.
+// 
 
 /*  To fix:
+ *  More closely align feet to colliders upon attachment (spherecast can result in walking on the gap between the radius of the hit and the sphere final origin)
+ *  Allow RCS Thrusting on a vessel when applicable, just ensure only vertical thrust is allowed (multiply linear rcs by vector up).
  *  Multiple kerbals loading seem to interfere, only one is allowed to attach at a time, others cant.
  *  Reverse-engineer the stock Rigidbody Anchoring logic used to stabalize kerbals on eva when packed, timewarping, or idling without movement input.
  *  Note: Not sure if this still occurs...  Possible issue with multiple kerbals with magnet boots on the same vessel interfering with each other, phantom forces acting on the main vessel. Sometimes results in kerbals being flung off into space but ive yet to catch it occur to an active vessel kerbal.
  *  Kinda fixed: Heading is bound to camera up, making it hard to walk on non-aligned surfaces
+ *  Hook into stock EVA Ground science state changes (to allow playing golf on a ship and possibly collecting samples of a ship)
+ *  Kerbals surface - aligned forward direction(the way they face) doesn't turn alongside the plane they are attached to, resulting in clear misaligned facing direction when the vessel beneath rotates.
  */
 
 /*  For the future:
@@ -390,7 +394,8 @@ namespace G3MagnetBoots
                 KerbalEVAAccess.EvaChute(Kerbal).AllowRepack(allowRepack: Settings.allowPackChute);
             }
 
-            SetToggleJetpack(false);
+            if (!Settings.canJetpackOnHull)
+                SetToggleJetpack(false);
 
             _animation.CrossFade(Kerbal.Animations.idle, 1.2f, PlayMode.StopSameLayer);
             if (_hullTarget.part != null)
@@ -567,18 +572,6 @@ namespace G3MagnetBoots
 
         protected virtual void RefreshHullTarget()
         {
-            /*
-            if (!Enabled) { _hullTarget = default; return; }
-
-            if (!HullTargeting.TryAcquireHullSpherecast(
-                Kerbal, GroundSpherecastUpOffset, GroundSpherecastRadius, GroundSpherecastLength, EngageRadius,
-                out HullTarget target))
-            {
-                _hullTarget = default;
-                return;
-            }
-            */
-
             if (!Enabled)
             {
                 _hullTarget = default;
@@ -595,6 +588,10 @@ namespace G3MagnetBoots
                 _hullTarget = default;
                 return;
             }
+
+
+            // m
+
 
             _hullTarget = target;
         }
@@ -635,9 +632,9 @@ namespace G3MagnetBoots
             if (Kerbal.JetpackDeployed && !base.vessel.packed && !Kerbal.isRagdoll && !EVAConstructionModeController.MovementRestricted && !_hullTarget.IsValid())
             {
                 if (!Settings.canJetpackOnHull) return;
-                    //if (FSM.CurrentState == st_idle_hull || FSM.CurrentState == st_walk_hull || FSM.CurrentState == st_jump_hull) return;
+                //if (FSM.CurrentState == st_idle_hull || FSM.CurrentState == st_walk_hull || FSM.CurrentState == st_jump_hull) return;
 
-                    packLinear = packTgtRPos * (Kerbal.thrustPercentage * 0.01f);
+                packLinear = packTgtRPos * (Kerbal.thrustPercentage * 0.01f);
                 if (packLinear != Vector3.zero && Kerbal.Fuel > 0.0)
                 {
                     base.part.AddForce(packLinear * Kerbal.linPower);
@@ -760,6 +757,54 @@ namespace G3MagnetBoots
             // set new world velocity
             Vector3 vRelNew = vRelT + vRelNNew;
             rb.velocity = surfaceVel + vRelNew;
+        }
+
+        protected virtual void LateUpdate()
+        {
+            if (!base.vessel.packed)
+            {
+                UpdateAnchorHull();
+            }
+        }
+
+        // onFallHeightFromTerrain is 0.3m by default in stock
+        public virtual void UpdateAnchorHull()
+        {
+            if (Settings.modEnabled && Enabled && base.vessel.loaded && !base.vessel.packed && (FSM.CurrentState == st_idle_hull))
+            {
+                if (KerbalEVAAccess.KerbalAnchorTimeCounter(Kerbal) < KerbalEVAAccess.KerbalAnchorTimeThreshold(Kerbal))
+                {
+                    KerbalEVAAccess.KerbalAnchorTimeCounter(Kerbal) += Time.deltaTime;
+                }
+                else if (base.vessel.HeightFromSurfaceHit.distance != 0f && base.vessel.HeightFromSurfaceHit.distance > Kerbal.onFallHeightFromTerrain)
+                {
+                    KerbalEVAAccess.RemoveRBAnchor(Kerbal);
+                }
+                else if (Kerbal.JetpackDeployed && Kerbal.JetpackIsThrusting)
+                {
+                    KerbalEVAAccess.RemoveRBAnchor(Kerbal);
+                }
+                else
+                {
+                    //KerbalEVAAccess.AddRBAnchor(Kerbal);
+                    AddRBHullAnchor();
+                }
+            }
+            else
+            {
+                KerbalEVAAccess.RemoveRBAnchor(Kerbal);
+            }
+        }
+
+        private void AddRBHullAnchor()
+        {
+            KerbalEVAAccess.AddRBAnchor(Kerbal);
+            if (KerbalEVAAccess.AnchorJoint(Kerbal) == null) return;
+
+            // Custom attributes for stock fixed joint anchor
+            KerbalEVAAccess.AnchorJoint(Kerbal).breakForce = Mathf.Infinity;
+            KerbalEVAAccess.AnchorJoint(Kerbal).breakTorque = Mathf.Infinity;
+            KerbalEVAAccess.AnchorJoint(Kerbal).connectedBody = _hullTarget.part != null ? _hullTarget.part.rb : null; // attach to the hull part's rigidbody if available, otherwise null (world)
         }
 
         /*

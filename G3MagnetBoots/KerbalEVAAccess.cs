@@ -19,6 +19,21 @@ namespace G3MagnetBoots
             AccessTools.MethodDelegate<Action<KerbalEVA, string, float>>(AccessTools.Method(typeof(KerbalEVA), "PostInteractionScreenMessage", new Type[] { typeof(string), typeof(float) }));
         internal static void PostInteractionScreenMessage(KerbalEVA eva, string msg, float duration) { _postInteractionScreenMessage(eva, msg, duration); }
 
+        //CalculateGroundLevelAngle
+        internal static readonly Action<KerbalEVA> _calculateGroundLevelAngle =
+            AccessTools.MethodDelegate<Action<KerbalEVA>>(AccessTools.Method(typeof(KerbalEVA), "CalculateGroundLevelAngle", Type.EmptyTypes));
+        internal static void CalculateGroundLevelAngle(KerbalEVA eva) => _calculateGroundLevelAngle(eva);
+
+        //private void AddRBAnchor()
+        internal static readonly Action<KerbalEVA> _addRBAnchor =
+            AccessTools.MethodDelegate<Action<KerbalEVA>>(AccessTools.Method(typeof(KerbalEVA), "AddRBAnchor", Type.EmptyTypes));
+        internal static void AddRBAnchor(KerbalEVA eva) => _addRBAnchor(eva);
+
+        //private void RemoveRBAnchor()
+        internal static readonly Action<KerbalEVA> _removeRBAnchor =
+            AccessTools.MethodDelegate<Action<KerbalEVA>>(AccessTools.Method(typeof(KerbalEVA), "RemoveRBAnchor", Type.EmptyTypes));
+        internal static void RemoveRBAnchor(KerbalEVA eva) => _removeRBAnchor(eva);
+
         // private fields
         internal static readonly AccessTools.FieldRef<KerbalEVA, float> _currentSpd =
             AccessTools.FieldRefAccess<KerbalEVA, float>("currentSpd");
@@ -74,6 +89,22 @@ namespace G3MagnetBoots
         internal static readonly AccessTools.FieldRef<KerbalEVA, KerbalEVA.VisorStates> _visorState =
             AccessTools.FieldRefAccess<KerbalEVA, KerbalEVA.VisorStates>("visorState");
 
+        //private bool isAnchored;
+        internal static readonly AccessTools.FieldRef<KerbalEVA, bool> _isAnchored =
+            AccessTools.FieldRefAccess<KerbalEVA, bool>("isAnchored");
+
+        //private float kerbalAnchorTimeThreshold = 0.5f;
+        internal static readonly AccessTools.FieldRef<KerbalEVA, float> _kerbalAnchorTimeThreshold =
+            AccessTools.FieldRefAccess<KerbalEVA, float>("kerbalAnchorTimeThreshold");
+
+        //private float kerbalAnchorTimeCounter;
+        internal static readonly AccessTools.FieldRef<KerbalEVA, float> _kerbalAnchorTimeCounter =
+            AccessTools.FieldRefAccess<KerbalEVA, float>("kerbalAnchorTimeCounter");
+
+        //private FixedJoint anchorJoint;
+        internal static readonly AccessTools.FieldRef<KerbalEVA, FixedJoint> _anchorJoint =
+            AccessTools.FieldRefAccess<KerbalEVA, FixedJoint>("anchorJoint");
+
         //HasWeldLineOfSight()
         internal static bool HasWeldLineOfSight(KerbalEVA eva)
         {
@@ -108,5 +139,9 @@ namespace G3MagnetBoots
         internal static ref bool WasVisorEnabledBeforeWelding(KerbalEVA eva) => ref _wasVisorEnabledBeforeWelding(eva);
         internal static ref KerbalEVA.VisorStates VisorState(KerbalEVA eva) => ref _visorState(eva);
         internal static ref ModuleEvaChute EvaChute(KerbalEVA eva) => ref _evaChute(eva);
+        internal static ref bool IsAnchored(KerbalEVA eva) => ref _isAnchored(eva);
+        internal static ref float KerbalAnchorTimeThreshold(KerbalEVA eva) => ref _kerbalAnchorTimeThreshold(eva);
+        internal static ref float KerbalAnchorTimeCounter(KerbalEVA eva) => ref _kerbalAnchorTimeCounter(eva);
+        internal static ref FixedJoint AnchorJoint(KerbalEVA eva) => ref _anchorJoint(eva);
     }
 }

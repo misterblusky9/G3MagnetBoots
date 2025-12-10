@@ -11,7 +11,17 @@ namespace G3MagnetBoots
     internal static class Logger
     {
         internal static string ModPrefix = "[" + Assembly.GetExecutingAssembly().GetName().Name + "]";
-        internal static bool IsDebugMode;
+        private static G3MagnetBootsSettings Settings => G3MagnetBootsSettings.Current;
+        internal static bool IsDebugMode
+        {
+            get => Settings?.isDebugMode ?? false;
+            set
+            {
+                if (Settings != null)
+                    Settings.isDebugMode = value;
+            }
+        }
+
 
         private static readonly string LogFilePath =
             Path.Combine(KSPUtil.ApplicationRootPath, "GameData/G3MagnetBoots/Debug/G3MagnetBoots.log").Replace("\\", "/");

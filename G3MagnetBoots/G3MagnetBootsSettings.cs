@@ -24,6 +24,9 @@ namespace G3MagnetBoots
         [GameParameters.CustomParameterUI("Hull detection style", toolTip = "Method used to detect hull surfaces")]
             public HullDetectionStyle hullDetectionStyle = HullDetectionStyle.Simple;
 
+        [GameParameters.CustomParameterUI("Enable walking on Asteroids/Comets", toolTip = "Allow magnet boots to function on asteroids and comets")]
+        public bool enableOnAsteroids = true;
+
         [GameParameters.CustomParameterUI("Allow RCS Jetpack on Hull", toolTip = "Allow use of RCS Jetpack while kerbal is attached to hull")]
         public bool canJetpackOnHull = true;
 

@@ -19,9 +19,7 @@ namespace G3MagnetBoots
         // log whjen target is valid
         public bool IsValid()
         {
-            var valid = part != null && collider != null;
-            //Logger.Trace(valid ? $"Acquired hull target: Part={part.name}, Collider={collider.name}, HitPoint={hitPoint}, HitNormal={hitNormal}, HitDistance={hitDistance}" : "Hull target is invalid.");
-            return valid;
+            return this.part != null && this.collider != null && (G3MagnetBootsSettings.Current.enableOnAsteroids || !HullTargeting.IsVesselAsteroidOrComet(this.part.vessel));
         }
     }
 
@@ -81,28 +79,39 @@ namespace G3MagnetBoots
             Part hitPart = hit.collider.GetComponentInParent<Part>();
             if (hitPart == null || hitPart.GetComponent<KerbalEVA>() != null)
                 return false;
-
+        
             Vector3 hitPoint = hit.point;
+            Vector3 closestPoint = hit.collider.ClosestPoint(footPos);
 
             Vector3 hitNormal = hit.normal;
-            //if (Vector3.Dot(hitNormal, up) < 0f) hitNormal = -hitNormal;
             hitNormal.Normalize();
 
             // Spherecast might hit on its side, not necessarily the point right below the feet, so check actual distance
-            float distFromFoot = Vector3.Distance(footPos, hitPoint);
-            if (distFromFoot > engageRadius)
+            float closestDistFromFoot = Vector3.Distance(footPos, hitPoint);
+            if (closestDistFromFoot > engageRadius)
                 return false;
 
             // Populate hull target
             target.part = hitPart;
             target.rigidbody = hitPart.rb;
             target.collider = hit.collider;
-            target.hitPoint = hitPoint;
+            target.hitPoint = hitPoint; // initial on radius
             target.hitNormal = hitNormal;
-            target.hitDistance = distFromFoot;
+            target.hitDistance = closestDistFromFoot;
 
             return true;
         }
+
+        internal static bool IsVesselAsteroidOrComet(Vessel v)
+        {
+            foreach (var mod in v.FindPartModulesImplementing<ModuleAsteroid>())
+            {
+                if (mod != null)
+                    return true;
+            }
+            return false;
+        }
+
 
         internal static float GetRelativeSpeedToHullPoint(this in HullTarget target, Part part)
         {
