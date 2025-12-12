@@ -156,6 +156,7 @@ namespace G3MagnetBoots
         {
             Enabled = !Enabled;
             UpdatePaw();
+            this.enabled = Enabled; //Need this to be toggled to signal to Kerbalism that the module is offline.
         }
 
         private void UpdatePaw()
