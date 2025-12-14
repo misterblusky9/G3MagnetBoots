@@ -73,6 +73,7 @@ namespace G3MagnetBoots
         private Transform _hullTransform;
 
         private bool _inLetGoCooldown;
+        private static uint timer = 0;
 
         // Accessors for protected KerbalEVA fields (via EVAAccess utility)
         public float currentSpd
@@ -154,22 +155,72 @@ namespace G3MagnetBoots
         [KSPEvent(guiActive = true, guiName = "Toggle Magnet Boots")]
         public void ToggleEnabled()
         {
-            Enabled = !Enabled;
-            UpdatePaw();
+            try
+            {
+                if (FlightGlobals.ActiveVessel.isEVA)
+                {
+                    this.Enabled = !this.Enabled;
+                    this.moduleIsEnabled = this.Enabled; //Need this to be toggled to signal to Kerbalism that the module is offline.
+                }
+            }
+            catch
+            {
+            }
+            this._inLetGoCooldown = false;
+            this.UpdatePaw();
         }
 
         private void UpdatePaw()
         {
-            Events[nameof(ToggleEnabled)].guiName = Enabled ? "Disable Magnet Boots" : "Enable Magnet Boots";
+            try
+            {
+                if (FlightGlobals.ActiveVessel.isEVA)
+                {
+                    if (this.moduleIsEnabled)
+                    {
+                        base.Events["ToggleEnabled"].guiActive = true;
+                        base.Events["ToggleEnabled"].guiName = "Disable Magnet Boots";
+                    }
+                    else
+                    {
+                        base.Events["ToggleEnabled"].guiActive = true;
+                        base.Events["ToggleEnabled"].guiName = "Enable Magnet Boots";
+                    }
+                }
+                else
+                {
+                    base.Events["ToggleEnabled"].guiName = "Magnet Boots Unavailable";
+                    base.Events["ToggleEnabled"].guiActive = false;
+                }
+            }
+            catch
+            {
+                base.Events["ToggleEnabled"].guiName = "Magnet Boots Unavailable";
+                base.Events["ToggleEnabled"].guiActive = false;
+            }
+        }
+
+        public void Update()
+        {
+            G3MagnetBootsModule.timer += 1;
+            if (G3MagnetBootsModule.timer >= 20)
+            {
+                G3MagnetBootsModule.timer = 0;
+                this.UpdatePaw();
+                this.moduleIsEnabled = this.Enabled;
+            }
         }
 
         // MonoBehaviour... behavior?
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            if (!HighLogic.LoadedSceneIsFlight) return;
-            _inLetGoCooldown = false;
-            UpdatePaw();
+            this.moduleIsEnabled = this.Enabled;
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                this._inLetGoCooldown = false;
+                this.UpdatePaw();
+            }
         }
 
         // EVA Hookup via Harmony Patch
