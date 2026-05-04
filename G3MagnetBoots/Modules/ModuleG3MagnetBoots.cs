@@ -3,6 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Linq;
+using Expansions;
+using FinePrint.Utilities;
+using KSP.Localization;
+using KSP.UI.Screens.Flight;
 using UnityEngine;
 using static KerbalEVA;
 
@@ -187,6 +191,7 @@ namespace G3MagnetBoots
         private bool _inLetGoCooldown;
         public bool _lastGear;
         public bool _lastOnHull;
+        public bool _lastHadBoots = false;
 
         // Accessors for protected KerbalEVA fields (via EVAAccess utility)
         public float currentSpd
@@ -319,15 +324,19 @@ namespace G3MagnetBoots
                 && !Kerbal.InConstructionMode;
         }
 
-
-        private bool IsTechUnlocked(string techId = "advExploration")
+        private bool HasMagnetBootsInInventory()
         {
-            techId = string.IsNullOrEmpty(techId) ? unlockTech : techId;
-            if (HighLogic.CurrentGame == null) return true;
-            if (HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX) return true; // Sandbox always unlocked
-            if (ResearchAndDevelopment.Instance == null) return false;
-            if (string.IsNullOrEmpty(techId)) return true; // no tech required
-            return ResearchAndDevelopment.GetTechnologyState(techId) == RDTech.State.Available;
+            if (Kerbal == null || Kerbal.part == null) return false;
+            var inventory = Kerbal.ModuleInventoryPartReference;
+            if (inventory == null || inventory.InventoryItemCount == 0) return false;
+
+            foreach (int slotIndex in inventory.storedParts.Keys)
+            {
+                StoredPart storedPart = inventory.storedParts[slotIndex];
+                if (storedPart != null && storedPart.partName.Equals("G3.EVAMagnetBoots"))
+                    return true;
+            }
+            return false;
         }
 
         public bool IsAboveHighAltitude()
@@ -342,7 +351,7 @@ namespace G3MagnetBoots
 
         public void SetEnabled(bool enabled)
         {
-            if (IsTechUnlocked())
+            if (HasMagnetBootsInInventory())
             {
                 this.enabled = enabled;
                 SetAG(KSPActionGroup.Gear, enabled);
@@ -385,10 +394,39 @@ namespace G3MagnetBoots
             UpdatePlantFlagOnHullButton();
             UpdateUI();
 
-            if (!IsTechUnlocked())
+            if (!HasMagnetBootsInInventory())
             {
+                if (_lastHadBoots)
+                {
+                    // Boots just removed — flush any pending hull state messages
+                    // before disabling, otherwise UpdateUI's early-return swallows them
+                    if (_lastOnHull)
+                    {
+                        PostMagMsg(false);
+                        _lastOnHull = false;
+                    }
+
+                    // Force detach cleanly
+                    if (IsOnHull || _hullTarget.IsValid())
+                    {
+                        ClearHullTarget();
+                        RemoveHullAnchor();
+                        if (Kerbal?.fsm != null)
+                            Kerbal.fsm.RunEvent(On_detachFromHull);
+                    }
+                }
+
+                _lastHadBoots = false;
                 this.enabled = false;
                 return;
+            }
+
+            // Boots just re-added
+            if (!_lastHadBoots)
+            {
+                _lastHadBoots = true;
+                SetEnabled(IsGearOn);
+                _lastGear = IsGearOn;
             }
 
             IsJetpackThrustingUp = Vector3.Dot(Vector3.Project(packTgtRPos, Kerbal.transform.up), Kerbal.transform.up) > JETPACK_UP_THRUST_THRESHOLD;
@@ -519,6 +557,10 @@ namespace G3MagnetBoots
             FSM.AddEvent(On_detachFromHull, st_walk_hull);
             FSM.AddEvent(On_letGo, st_walk_hull);
             FSM.AddEvent(Kerbal.On_packToggle, st_walk_hull);
+            FSM.AddEvent(Kerbal.On_stumble, st_walk_hull);
+            FSM.AddEvent(Kerbal.On_ladderGrabStart, st_walk_hull);
+            FSM.AddEvent(Kerbal.On_flagPlantStart, st_walk_hull);
+            FSM.AddEvent(Kerbal.On_boardPart, st_walk_hull);
             FSM.AddEvent(Kerbal.On_stumble, st_walk_hull);
             FSM.AddEvent(Kerbal.On_ladderGrabStart, st_walk_hull);
             FSM.AddEvent(Kerbal.On_flagPlantStart, st_walk_hull);

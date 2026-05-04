@@ -2,5 +2,8 @@
 	<Folder Name="/Solution Items/">
 		<File Path="G3MagnetBoots/G3MagnetBoots.csproj.user" />
 	</Folder>
+	<Folder Name="/_Reference/">
+		<File Path="KerbalEVA.cs" />
+	</Folder>
 	<Project Path="G3MagnetBoots\G3MagnetBoots.csproj" />
 </Solution>

@@ -23,14 +23,14 @@ namespace G3MagnetBoots
             {
                 if (GameSettings.LANDING_GEAR.GetKeyDown())
                 {
-                    if (!IsTechUnlocked())
+                    if (!HasMagnetBootsInInventory())
                         PostTechNotResearchedMsg();
                     else
                         ToggleAG(KSPActionGroup.Gear);
                 }
             }
 
-            if (!IsTechUnlocked()) return;
+            if (!HasMagnetBootsInInventory()) return;
 
             if (_lastGear != IsGearOn)
             {
