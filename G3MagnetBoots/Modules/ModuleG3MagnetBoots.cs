@@ -398,8 +398,6 @@ namespace G3MagnetBoots
             {
                 if (_lastHadBoots)
                 {
-                    // Boots just removed — flush any pending hull state messages
-                    // before disabling, otherwise UpdateUI's early-return swallows them
                     if (_lastOnHull)
                     {
                         PostMagMsg(false);
@@ -506,6 +504,8 @@ namespace G3MagnetBoots
             On_attachToHull.GoToStateOnEvent = st_idle_hull;
             On_attachToHull.OnCheckCondition = currentState => ShouldEnterHullIdle();
             FSM.AddEvent(On_attachToHull, Kerbal.st_idle_fl);
+            FSM.AddEvent(On_attachToHull, Kerbal.st_idle_gr);
+            FSM.AddEvent(On_attachToHull, Kerbal.st_idle_b_gr);
 
             On_detachFromHull = new("Detach from Hull");
             On_detachFromHull.updateMode = KFSMUpdateMode.FIXEDUPDATE;
@@ -622,7 +622,10 @@ namespace G3MagnetBoots
             // Stock Ladder Let Go Event augment
             Kerbal.On_ladderLetGo.OnEvent += delegate
             {
-                SetAG(KSPActionGroup.Gear, true);
+                if (Settings.magbootsAutoToggleEnabled)
+                {
+                    SetAG(KSPActionGroup.Gear, true);
+                }
                 Kerbal.StartCoroutine(On_ladderLetGo_Coroutine());
             };
 
@@ -657,7 +660,6 @@ namespace G3MagnetBoots
             // Redirect golf completion back to st_idle_hull instead of the vanilla ground state
             Kerbal.On_Golf_Complete.OnEvent -= On_Golf_Complete_Hull_Redirect;
             Kerbal.On_Golf_Complete.OnEvent += On_Golf_Complete_Hull_Redirect;
-
 
             // EVA Construction pipeline
             FSM.AddEvent(Kerbal.On_constructionModeEnter, st_idle_hull);
@@ -1066,21 +1068,18 @@ namespace G3MagnetBoots
             Vector3 impulse = (Kerbal.transform.up * Mathf.Pow(Part.mass / PhysicsGlobals.PerCommandSeatReduction, Kerbal.jumpMultiplier) * Kerbal.maxJumpForce) + (Kerbal.transform.forward * tgtSpeed * Kerbal.massMultiplier);
             Part.AddImpulse(impulse);
 
-            var endAnim = (tgtSpeed < MIN_SPEED_THRESHOLD)
-                ? Kerbal.Animations.JumpStillEnd
-                : Kerbal.Animations.JumpFwdEnd;
+            var endAnim = (tgtSpeed < MIN_SPEED_THRESHOLD) ? Kerbal.Animations.JumpStillEnd : Kerbal.Animations.JumpFwdEnd;
             _animation.CrossFade(endAnim, IDLE_ANIMATION_CROSSFADE_TIME, PlayMode.StopAll);
         }
+
 
         private IEnumerator On_ladderLetGo_Coroutine()
         {
             GroundSpherecastRadius += LADDER_LETGO_SPHERECAST_RADIUS_BOOST;
             GroundSpherecastLength += LADDER_LETGO_SPHERECAST_LENGTH_BOOST;
-            Logger.Debug($"Ladder let-go: boosted spherecast radius to {GroundSpherecastRadius} and length to {GroundSpherecastLength} for {LADDER_LETGO_SPHERECAST_BOOST_TIME} seconds");
             yield return new WaitForSeconds(LADDER_LETGO_SPHERECAST_BOOST_TIME);
             GroundSpherecastRadius -= LADDER_LETGO_SPHERECAST_RADIUS_BOOST;
             GroundSpherecastLength -= LADDER_LETGO_SPHERECAST_LENGTH_BOOST;
-            Logger.Debug($"Ladder let-go: reverted spherecast radius to {GroundSpherecastRadius} and length to {GroundSpherecastLength}");
         }
 
         // Helper: zero Kerbal movement state when triggering EVA science from a hull state.
@@ -1160,22 +1159,15 @@ namespace G3MagnetBoots
 
         private void On_ConstructionEnter_Hull_Hook()
         {
-            Logger.Debug($"[Construction] Enter hook  currentState={CurrentFSMStateName}  constructionFromHull={_constructionFromHull}");
             if (FSM.CurrentState == st_idle_hull || FSM.CurrentState == st_walk_hull)
             {
                 _constructionFromHull = true;
                 ZeroHullMovementForScience();
-                Logger.Debug($"[Construction] Enter hook SET  constructionFromHull=true");
-            }
-            else
-            {
-                Logger.Debug($"[Construction] Enter hook SKIPPED (not on hull state)");
             }
         }
 
         private void On_ConstructionExit_Hull_Hook()
         {
-            Logger.Debug($"[Construction] Exit hook  currentState={CurrentFSMStateName}  constructionFromHull={_constructionFromHull}");
             ZeroHullMovementForScience();
             if (_constructionFromHull && FSM.CurrentState == Kerbal.st_exitingConstruction)
             {
@@ -1188,27 +1180,18 @@ namespace G3MagnetBoots
 
         private void On_ConstructionComplete_Hull_Redirect()
         {
-            Logger.Debug($"[Construction] Complete redirect  currentState={CurrentFSMStateName}  constructionFromHull={_constructionFromHull}");
             if (_constructionFromHull && FSM.CurrentState == Kerbal.st_exitingConstruction)
             {
-                // Exiting construction from hull: redirect back to hull idle
                 Kerbal.On_constructionModeTrigger_fl_Complete.GoToStateOnEvent = st_idle_hull;
                 Kerbal.On_constructionModeTrigger_gr_Complete.GoToStateOnEvent = st_idle_hull;
                 _constructionFromHull = false;
-                Logger.Debug($"[Construction] Complete redirect -> st_idle_hull, cleared constructionFromHull");
             }
             else
             {
-                // Entering construction (or not from hull): restore stock destinations so the
-                // construction-mode idle state is reached normally instead of looping back to
-                // st_idle_hull while construction mode is still active.
                 Kerbal.On_constructionModeTrigger_fl_Complete.GoToStateOnEvent = Kerbal.st_idle_fl;
                 Kerbal.On_constructionModeTrigger_gr_Complete.GoToStateOnEvent = Kerbal.st_idle_gr;
-                Logger.Debug($"[Construction] Complete redirect -> stock destinations (fl/gr)  constructionFromHull={_constructionFromHull}");
             }
         }
-
-
 
         private void On_weldStart_Hull_Hook()
         {
@@ -1217,8 +1200,6 @@ namespace G3MagnetBoots
                 FSM.CurrentState == st_walk_hull ||
                 _constructionFromHull ||
                 _hullTarget.IsValid();
-
-            Logger.Debug($"[Weld] Start hook currentState={CurrentFSMStateName} fromHull={fromHull} hullValid={_hullTarget.IsValid()} constructionFromHull={_constructionFromHull}");
 
             if (!fromHull)
             {
@@ -1331,7 +1312,7 @@ namespace G3MagnetBoots
 
         private void SetToggleJetpack(bool enable)
         {
-            if (Settings.jetpackAutoToggleEnabled && Kerbal.HasJetpack)
+            if (Settings.jetpackAutoToggleEnabled && Kerbal.HasJetpack && FSM.CurrentState == Kerbal.st_idle_fl)
             {
                 if (enable && !Kerbal.JetpackDeployed)
                 {

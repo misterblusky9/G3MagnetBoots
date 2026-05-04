@@ -4,3 +4,5 @@ obj/
 *.user
 GameData/G3MagnetBoots/Plugins/G3MagnetBoots.dll
 GameData/G3MagnetBoots/Plugins/G3MagnetBoots.pdb
+/GameData/G3MagnetBoots/Debug/*
+KerbalFSM_DebugPanel.cs

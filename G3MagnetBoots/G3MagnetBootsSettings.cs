@@ -20,8 +20,11 @@ namespace G3MagnetBoots
         [GameParameters.CustomParameterUI("Require Microgravity", toolTip = "Prevent magnet boots from working below 3500m altitude to avoid interference with parachute deployment and atmospheric flight.")]
         public bool magbootsRequireMicrogravity = false;
 
-        [GameParameters.CustomParameterUI("Auto-Enable Jetpack When Detaching from Hull", toolTip = "Automatically enable the jetpack when detaching from a hull, improving quality of life when falling into space.")]
+        [GameParameters.CustomParameterUI("Auto-Enable Jetpack When Detaching from Hull in Microgravity", toolTip = "Automatically enable the jetpack when detaching from a hull in microgravity, improving quality of life when falling into space.")]
         public bool jetpackAutoToggleEnabled = true;
+
+        [GameParameters.CustomParameterUI("Auto-Enable Magnet Boots When Leaving a Ladder", toolTip = "Automatically enable the magnet boots when leaving a ladder, improving quality of life when transitioning from ladders to a hull.")]
+        public bool magbootsAutoToggleEnabled = true;
 
         [GameParameters.CustomParameterUI("Allow Repacking EVA Parachutes on Hull", toolTip = "Allow Kerbals to repack their parachutes while attached to a hull.")]
         public bool magbootsRepackChuteEnabled = true;

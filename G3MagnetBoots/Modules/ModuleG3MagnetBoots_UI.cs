@@ -23,10 +23,7 @@ namespace G3MagnetBoots
             {
                 if (GameSettings.LANDING_GEAR.GetKeyDown())
                 {
-                    if (!HasMagnetBootsInInventory())
-                        PostTechNotResearchedMsg();
-                    else
-                        ToggleAG(KSPActionGroup.Gear);
+                    ToggleAG(KSPActionGroup.Gear);
                 }
             }
 
@@ -76,18 +73,6 @@ namespace G3MagnetBoots
             string msg = "Magnet Boots Anchor broken due to G-Force!";
             string prefix = (vessel != null && vessel == FlightGlobals.ActiveVessel) ? "" : $"{Crew.displayName}: ";
             _magMsg = ScreenMessages.PostScreenMessage(prefix + msg, 2f, ScreenMessageStyle.UPPER_CENTER, _magMsg);
-        }
-
-        float _postTechMsgCooldown = 0f;
-        void PostTechNotResearchedMsg()
-        {
-            if (_postTechMsgCooldown > 0f)
-            {
-                _postTechMsgCooldown -= Time.deltaTime;
-                return;
-            }
-            _postTechMsgCooldown = 5f;
-            _magMsg = ScreenMessages.PostScreenMessage($"{unlockTech} not researched!", 3f, ScreenMessageStyle.UPPER_CENTER, _magMsg);
         }
 
         // Keep the stock Gear AG button in sync with the magboots state visually
