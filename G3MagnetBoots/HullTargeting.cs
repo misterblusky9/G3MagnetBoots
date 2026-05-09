@@ -13,10 +13,16 @@ namespace G3MagnetBoots
 
         public bool IsValid()
         {
-            return this.part != null
-                && this.collider != null
-                && this.part.FindModuleImplementing<ModuleG3NoAttach>() == null // cannot attach to parts with G3NoAttachModule, added to blacklist parts from config
-                && (G3MagnetBootsSettings.Current.magbootsAsteroidsEnabled || this.part.FindModuleImplementing<ModuleAsteroid>() == null);
+            if (this.part == null || this.collider == null) return false;
+            if (this.part.FindModuleImplementing<ModuleG3NoAttach>() != null) return false;
+            if (!G3MagnetBootsSettings.Current.magbootsAsteroidsEnabled && this.part.FindModuleImplementing<ModuleAsteroid>() != null) return false;
+
+            // Disallow attaching to debris, unknown, or uncontrolled space objects
+            Vessel v = this.part.vessel;
+            if (v != null && (v.vesselType == VesselType.Debris || v.vesselType == VesselType.Unknown || v.vesselType == VesselType.SpaceObject))
+                return false;
+
+            return true;
         }
     }
 
@@ -117,6 +123,10 @@ namespace G3MagnetBoots
                 if (!G3MagnetBootsSettings.Current.magbootsAsteroidsEnabled &&
                     hitPart.FindModuleImplementing<ModuleAsteroid>() != null) continue;
 
+                // Disallow debris, unknown, uncontrolled space objects
+                Vessel hitVessel = hitPart.vessel;
+                if (hitVessel != null && (hitVessel.vesselType == VesselType.Debris || hitVessel.vesselType == VesselType.Unknown || hitVessel.vesselType == VesselType.SpaceObject))
+                    continue;
 
                 bool originInsideThis = false;
                 if (hit.collider != null)

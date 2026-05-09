@@ -351,16 +351,10 @@ namespace G3MagnetBoots
 
         public void SetEnabled(bool enabled)
         {
-            if (HasMagnetBootsInInventory())
-            {
-                this.enabled = enabled;
-                SetAG(KSPActionGroup.Gear, enabled);
-            }
-            else
-            {
-                this.enabled = false;
-                SetAG(KSPActionGroup.Gear, false);
-            }
+            bool bootsEnabled = enabled && HasMagnetBootsInInventory();
+            this.enabled = bootsEnabled;
+            this.moduleIsEnabled = bootsEnabled;
+            SetAG(KSPActionGroup.Gear, bootsEnabled);
         }
 
 
