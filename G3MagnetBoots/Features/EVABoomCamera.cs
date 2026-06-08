@@ -8,29 +8,17 @@ using UnityEngine.EventSystems;
 
 namespace G3MagnetBoots
 {
-    [HarmonyPatch(typeof(FlightCamera))]
-    public static class Patch_FlightCamera_SetMode_EvaLocked
+    // NOTE: This intentionally does NOT patch FlightCamera.setMode.
+    //
+    // A previous version rewrote a requested LOCKED -> FREE for every vessel when
+    // not on a hull. Because stock SetNextMode() cycles (int)mode+1 and only wraps
+    // LOCKED(4) -> AUTO(0), never letting mode become LOCKED broke the cycle: both
+    // LOCKED *and* AUTO became unreachable on every vessel. The boom camera does
+    // not need that interception - engagement is decided solely by ShouldOwnCamera
+    // (mode == LOCKED && on hull && feature enabled) in the LateUpdate patch, so
+    // stock camera modes are left completely alone here.
+    public static class EvaBootsCameraHelper
     {
-        [HarmonyPrefix]
-        [HarmonyPatch("setMode", new[] { typeof(FlightCamera.Modes) })]
-        public static bool Prefix(FlightCamera __instance, ref FlightCamera.Modes __0)
-        {
-            bool isOnHull = TryGetBoots(out ModuleG3MagnetBoots boots) && boots.IsOnHull;
-
-            if (__0 == FlightCamera.Modes.LOCKED && (!G3MagnetBoots.lockedCameraModeEnabled || !isOnHull))
-            {
-                __0 = FlightCamera.Modes.FREE;
-                return true;
-            }
-
-            if (G3MagnetBoots.lockedCameraModeEnabled && isOnHull && __0 == FlightCamera.Modes.AUTO)
-            {
-                __0 = FlightCamera.Modes.FREE;
-            }
-
-            return true;
-        }
-
         internal static bool TryGetBoots(out ModuleG3MagnetBoots boots)
         {
             boots = null;
@@ -141,7 +129,7 @@ namespace G3MagnetBoots
                 return false;
 
             ModuleG3MagnetBoots boots;
-            return Patch_FlightCamera_SetMode_EvaLocked.TryGetBoots(out boots) && boots.IsOnHull;
+            return EvaBootsCameraHelper.TryGetBoots(out boots) && boots.IsOnHull;
         }
 
         internal static void UpdateCamera(FlightCamera cam)
@@ -150,7 +138,7 @@ namespace G3MagnetBoots
             try
             {
                 ModuleG3MagnetBoots boots;
-                if (!Patch_FlightCamera_SetMode_EvaLocked.TryGetBoots(out boots) || !boots.IsOnHull)
+                if (!EvaBootsCameraHelper.TryGetBoots(out boots) || !boots.IsOnHull)
                 {
                     ReleaseIfActive(cam);
                     return;
