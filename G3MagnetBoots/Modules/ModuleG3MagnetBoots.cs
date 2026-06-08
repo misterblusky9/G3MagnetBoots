@@ -339,6 +339,12 @@ namespace G3MagnetBoots
             return false;
         }
 
+        private bool BootsAvailable()
+        {
+            if (Settings != null && !Settings.magbootsRequireInventoryItem) return true;
+            return HasMagnetBootsInInventory();
+        }
+
         public bool IsAboveHighAltitude()
         {
             if (Part.rb != null)
@@ -351,7 +357,7 @@ namespace G3MagnetBoots
 
         public void SetEnabled(bool enabled)
         {
-            bool bootsEnabled = enabled && HasMagnetBootsInInventory();
+            bool bootsEnabled = enabled && BootsAvailable();
             this.enabled = bootsEnabled;
             this.moduleIsEnabled = bootsEnabled;
             SetAG(KSPActionGroup.Gear, bootsEnabled);
@@ -366,6 +372,7 @@ namespace G3MagnetBoots
 
             _inLetGoCooldown = false;
 
+            SetEnabled(false);
             HookAGGearButton();
 
             GameEvents.onKerbalPassedOutFromGeeForce.Add(OnKerbalBlackedOut);
@@ -388,7 +395,7 @@ namespace G3MagnetBoots
             UpdatePlantFlagOnHullButton();
             UpdateUI();
 
-            if (!HasMagnetBootsInInventory())
+            if (!BootsAvailable())
             {
                 if (_lastHadBoots)
                 {
@@ -409,7 +416,9 @@ namespace G3MagnetBoots
                 }
 
                 _lastHadBoots = false;
-                this.enabled = false;
+                // SetEnabled(false) clears moduleIsEnabled too, so Kerbalism's
+                // EC drain stops once the boots are gone (not just this.enabled).
+                SetEnabled(false);
                 return;
             }
 

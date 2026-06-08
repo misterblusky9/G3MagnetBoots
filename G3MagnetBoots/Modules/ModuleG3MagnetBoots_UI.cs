@@ -27,7 +27,7 @@ namespace G3MagnetBoots
                 }
             }
 
-            if (!HasMagnetBootsInInventory()) return;
+            if (!BootsAvailable()) return;
 
             if (_lastGear != IsGearOn)
             {

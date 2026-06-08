@@ -17,6 +17,9 @@ namespace G3MagnetBoots
         [GameParameters.CustomParameterUI("Allow LOCKED Camera Mode on Hull", toolTip = "A new dampened orbiting camera boom option for better control working atop a moving vessel.")]
         public bool magbootsLockedCameraModeEnabled = true;
 
+        [GameParameters.CustomParameterUI("Require Magnet Boots in Inventory", toolTip = "When enabled, a kerbal must carry the EVA Magnetic Boots cargo item to use the magnet boots. Disable to let every kerbal use them with no inventory item required.")]
+        public bool magbootsRequireInventoryItem = true;
+
         [GameParameters.CustomParameterUI("Require Microgravity", toolTip = "Prevent magnet boots from working below 3500m altitude to avoid interference with parachute deployment and atmospheric flight.")]
         public bool magbootsRequireMicrogravity = false;
 
